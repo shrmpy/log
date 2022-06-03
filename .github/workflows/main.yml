@@ -8,6 +8,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Gemini2md action step
-        id: g2md
-        uses: shrmpy/actions-gemini2md
+        id: gem2md
+        uses: shrmpy/actions-gemini2md@v1
 
