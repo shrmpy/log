@@ -1,0 +1,13 @@
+on: [push]
+
+jobs:
+  gemini_md_job:
+    runs-on: ubuntu-latest
+    name: A job to convert Gemtext
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Gemini2md action step
+        id: g2md
+        uses: shrmpy/actions-gemini2md
+
