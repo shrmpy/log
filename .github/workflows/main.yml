@@ -1,4 +1,8 @@
-on: [push]
+on: 
+  push:
+    branches: [main]
+  pull_request:
+
 
 jobs:
   gm2md_job:
@@ -10,7 +14,6 @@ jobs:
       - name: gm2md step
         id: gm2md
         uses: shrmpy/actions-gemini2md@v1.3
-
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -18,3 +21,17 @@ jobs:
           path: |
             gemtext
             !gemtext/**/*.gmi
+
+  deploy:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: 'latest'
+
+
