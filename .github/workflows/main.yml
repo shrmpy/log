@@ -1,13 +1,20 @@
 on: [push]
 
 jobs:
-  gemini_md_job:
+  gm2md_job:
     runs-on: ubuntu-latest
-    name: Convert Gemtext job
+    name: Convert gemtext job
     steps:
       - name: Checkout step
         uses: actions/checkout@v3
-      - name: Gemini2md step
-        id: gem2md
-        uses: shrmpy/actions-gemini2md@v1.1
+      - name: gm2md step
+        id: gm2md
+        uses: shrmpy/actions-gemini2md@v1.2
 
+      - name: Archive md artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: first-pass-markdown
+          path: |
+            gemtext
+            !gemtext/**/*.gmi
