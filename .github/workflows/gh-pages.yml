@@ -20,9 +20,6 @@ jobs:
             sed -i '1i +++\ndraft = false\n+++\n' "$file"
           done
 
-      - name: Section index step 
-        run: |
-          echo '+++\n\ntitle = "examples"\n\n+++\n' > gemtext/_index.md
 
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
