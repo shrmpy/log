@@ -15,7 +15,7 @@
     {{ range (.Site.GetPage "section" "posts").Pages }}
         <tr>
           <td class="pv1 pv3-ns bb b--black-20">
-        <a href="{{ .Permalink }}" class="link dim">{{ .File.Path }}</a>
+        <a href="{{ .Permalink }}" class="link dim">{{ .File.TranslationBaseName }}</a>
 	  </td>
           <td class="pv1 pv3-ns ph2-ns bb b--black-20">
             <time>{{ .ReadingTime }}</time>
