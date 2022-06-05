@@ -20,7 +20,6 @@ jobs:
             sed -i '1i +++\ndraft = false\n+++\n' "$file"
           done
 
-
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -40,7 +39,7 @@ jobs:
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
         with:
-          hugo-version: 'latest'
+          hugo-version: '0.100.1'
 
       - name: Unarchive md artifacts
         uses: actions/download-artifact@v3
