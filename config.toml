@@ -1,6 +1,15 @@
 baseURL = '/'
 timeZone = 'UTC'
+summaryLength = 25
 disableKinds = ["taxonomy", "term", "sitemap"]
+
+[module]
+[[module.mounts]]
+  source = 'content'
+  target = 'content'
+[[module.mounts]]
+  source = 'md-articles'
+  target = 'content/posts'
 
 [privacy]
   [privacy.disqus]

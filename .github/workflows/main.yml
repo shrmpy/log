@@ -19,8 +19,8 @@ jobs:
         with:
           name: first-pass-markdown
           path: |
-            gemtext
-            !gemtext/**/*.gmi
+            gemtext/*.md
+
 
   deploy:
     needs: gm2md_job
@@ -35,6 +35,17 @@ jobs:
         with:
           hugo-version: 'latest'
 
+      - name: Unarchive md artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: first-pass-markdown
+          path: md-articles
       - name: Build
         run: hugo --minify
 
+      - name: Github pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
