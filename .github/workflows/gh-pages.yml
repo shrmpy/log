@@ -14,6 +14,12 @@ jobs:
       - name: gm2md step
         id: gm2md
         uses: shrmpy/actions-gemini2md@v1.3
+      - name: Frontmatter step 
+        run: |
+          for file in gemtext/*.md; do
+            sed -i '1i +++\ndraft = false\n+++\n' "$file"
+          done
+
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
         with:
