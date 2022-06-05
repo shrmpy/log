@@ -22,7 +22,7 @@ jobs:
 
       - name: Section index step 
         run: |
-          echo '+++\ntitle = "examples"\n+++\n\n' > gemtext/_index.md
+          echo '+++\n\ntitle = "examples"\n\n+++\n' > gemtext/_index.md
 
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
