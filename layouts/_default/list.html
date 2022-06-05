@@ -9,13 +9,12 @@
 
 </head>
 <body>
-
 <header class="tc ph4">
   <h1 class="f2 f-subheadline-ns lh-title-ns mv3">
-    Github workflows
+    {{ .Title }}
   </h1>
   <h2 class="f4 f3-ns mt0 lh-copy">
-    Learn actions
+    {{ .Content }}
   </h2>
 </header>
 
@@ -23,7 +22,7 @@
   <div class="overflow-auto">
     <table class="f6 w-100 mw8 " cellspacing="0">
       <tbody class="lh-copy">
-    {{ range (.Site.GetPage "section" "posts").Pages }}
+    {{ range .Pages }}
         <tr>
           <td class="pv1 pv3-ns bb b--black-20">
         <a href="{{ .Permalink }}" class="link dim">{{ .File.TranslationBaseName }}</a>
