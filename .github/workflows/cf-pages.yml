@@ -43,7 +43,7 @@ jobs:
           fetch-depth: 0
       - name: Hugo baseURL step 
         run: |
-          sed -i 's|shrmpy.github.io/log|learn-gemini-diy.pages.dev|' config.toml
+          sed -i 's|shrmpy.github.io/log|shrmpy-log.pages.dev|' config.toml
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
