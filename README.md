@@ -11,7 +11,7 @@ A skeleton template to:
 ## Demo
 
 [Github Pages](https://shrmpy.github.io/log)
-[Cloudflare Pages](https://learn-gemini-diy.pages.dev/)
+[Cloudflare Pages](https://shrmpy-log.pages.dev/)
 
 
 ## Credits
