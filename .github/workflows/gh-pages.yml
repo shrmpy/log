@@ -20,6 +20,10 @@ jobs:
             sed -i '1i +++\ndraft = false\n+++\n' "$file"
           done
 
+      - name: Hugo Section step 
+        run: |
+          mv content/_index.md gemtext/
+
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
         with:
