@@ -1,10 +1,10 @@
 +++
 
-title = 'posts'
+title = 'placeholder'
 
 +++
 
-# Section
+# Index Heading
 
-Placeholder
+Hugo transforms this content into the index file of branch-bundle lists
 

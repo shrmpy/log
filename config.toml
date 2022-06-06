@@ -1,4 +1,4 @@
-baseURL = '/'
+baseURL = 'https://shrmpy.github.io/log'
 timeZone = 'UTC'
 summaryLength = 25
 disableKinds = ["taxonomy", "term", "sitemap"]
