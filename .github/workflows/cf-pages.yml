@@ -60,9 +60,11 @@ jobs:
       - name: Cloudflare publish
         uses: cloudflare/pages-action@1
         with:
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          directory: ./public
-          projectName: learn-gemini-diy
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: learn-gemini-diy
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          directory: ./public
+
+
 
