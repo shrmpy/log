@@ -1,0 +1,39 @@
+{{ define "main" }}
+<div class="relative min-vh-100 bg-black">
+
+<div class="dt w-100 pb3 pb5-ns">
+  <div class="dtc v-mid ph3 ph4-l ">
+     <h1 class="f2 lh-copy f-subheadline-ns lh-title-ns tc dark-gray">{{.Title}}</h1>
+     <h3 class="f4 center mw5 mid-gray">&gt;_</h3>
+      <ul class="list pl0 ml0 center mw5 ba b--near-black br3 ">
+       <li class="ph3 pv2 bb b--near-black">
+	       <a href="/posts/" class="link dim moon-gray">Devlog</a></li>
+       <li class="ph3 pv2 bb b--near-black">
+	       <a href="/2020/" class="link dim moon-gray">2020</a></li>
+       <li class="ph3 pv2 bb b--near-black">
+	       <a href="/2019.html" class="link dim moon-gray">2019</a></li>
+       <li class="ph3 pv2  b--near-black">
+	       <a href="/about/" class="link dim moon-gray">About</a></li>
+      </ul>
+      <p>
+        <!-- Note that the content for index.html, as a sort of list page, will pull from content/_index.md -->
+        {{.Content}}
+      </p>
+  </div>
+</div>
+
+<footer class="absolute bottom-0 right-0 pv0 tr">
+     <a href="https://tachyons.io"
+        class="dib link dim gold bg-center cover"
+        style="background-image:url(/img/made-with-tachyons.png);width:85px;height:16px;"
+        ></a>
+     <a href="https://gohugo.io"
+        class="f6 dib no-underline dim">
+        <span class="text-gradient">Hugo</span></a>
+     <a href="https://gohugo.io/about/hugo-and-gdpr/#disable-all-services"
+        class="f6 dib link dim white-10">Privacy</a>
+     <small class="f6 dib near-black">2022 興怡</small>
+</footer>
+</div>
+
+{{ end }}
