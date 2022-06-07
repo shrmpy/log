@@ -1,0 +1,13 @@
+:root {
+   --hugo-gradient: linear-gradient(0deg,#4F39FA, #DA62C4);
+}
+.text-gradient {
+/*font-weight: 900;*/
+		background-image: var(--hugo-gradient);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-size: 100% 200%;
+		background-position-y: 100%;
+		border-radius: 0.4rem;
+		animation: pulse 4s ease-in-out infinite;
+}

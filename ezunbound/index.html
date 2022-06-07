@@ -1,0 +1,63 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Learn workflow</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css></head><body><div class="fl w-90 pa2"><h1 class="f3 f2-ns lh-title-ns">Unbound</h1><h3 class="f4 f3-ns lh-copy-ns">Easy Docker, Happy Life</h3><p>For the easiest path to block ads, seeing is believing. So the best
+demonstration is getting things running quickly.</p><ol><li><p>Docker makes this painless. Go grab <a href=https://docs.docker.com/get-docker/>Docker</a>.</p></li><li><p>Fetch the list of domains to block:</p></li></ol><pre><code data-astro-raw><span>curl</span> -o unbound.bl https://raw.githubusercontent.com/oznu/dns-zone-blacklist/master/unbound/unbound.blacklist
+</code></pre><ol start=3><li>Fetch the DNS root servers cache:</li></ol><pre><code data-astro-raw><span>curl</span> -o root.hints https://www.internic.net/domain/named.root
+</code></pre><ol start=4><li>Use root hints and block list in the Unbound configuration file:</li></ol><pre><code data-astro-raw><span>sudo</span> <span>nano</span> unbound.conf</code></pre><p>With file contents:</p><pre><code data-astro-raw><span>server</span><span>:</span>
+<span>interface</span><span>:</span> 0.0.0.0
+<span>port</span><span>:</span> <span>5300</span>
+
+<span>do-ip6</span><span>:</span> no
+<span>do-daemonize</span><span>:</span> no
+
+<span>access-control</span><span>:</span> 127.0.0.1/32 allow
+<span>access-control</span><span>:</span> 192.168.0.0/16 allow
+<span>access-control</span><span>:</span> 172.16.0.0/12 allow
+<span>access-control</span><span>:</span> 10.0.0.0/8 allow
+
+<span>logfile</span><span>:</span> <span>""</span>
+<span>verbosity</span><span>:</span> <span>5</span>
+
+<span>root-hints</span><span>:</span> /opt/unbound/etc/unbound/root.hints
+<span>include</span><span>:</span> /opt/unbound/etc/unbound/unbound.bl
+</code></pre><p>Exit and save changes.</p><ol start=5><li>Run <a href=https://gitlab.com/klutchell/unbound>Kyle Harding's Unbound image</a></li></ol><pre><code data-astro-raw>docker run --name unbound -p <span>5300</span>:5300/udp -v <span><span>$(</span><span>pwd</span><span>)</span></span>:/opt/unbound/etc/unbound klutchell/unbound</code></pre><h2 id=check-dns>Check DNS</h2><p>Let's run a query for the baseline:</p><pre><code data-astro-raw><span>dig</span> @127.0.0.1 -p <span>5300</span> adafruit.com</code></pre><p>Which will show output resembling:</p><pre><code data-astro-raw>
+<span>; &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; @127.0.0.1 -p 5300 adafruit.com</span>
+<span>; (1 server found)</span>
+<span>;; global options: +cmd</span>
+<span>;; Got answer:</span>
+<span>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 50330</span>
+<span>;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1</span>
+
+<span>;; OPT PSEUDOSECTION:</span>
+<span>; EDNS: version: 0, flags:; udp: 4096</span>
+<span>;; QUESTION SECTION:</span>
+<span>;adafruit.com.			IN	A</span>
+
+<span>;; ANSWER SECTION:</span>
+adafruit.com.		300	<span>IN</span>	<span>A</span>	104.20.39.240
+adafruit.com.		300	<span>IN</span>	<span>A</span>	104.20.38.240
+
+<span>;; Query time: 67 msec</span>
+<span>;; SERVER: 127.0.0.1#5300(127.0.0.1)</span>
+<span>;; WHEN: Sun Jan 19 05:38:29 PST 2020</span>
+<span>;; MSG SIZE  rcvd: 73</span></code></pre><p>The result confirms the ability of the Unbound container to resolve the
+domain <code>adafruit.com</code> into its address record <code>104.20.39.240</code></p><h2 id=verify-blocking>Verify Blocking</h2><p>Now let's see that Unbound blocks known advertiser domains.</p><pre><code data-astro-raw><span>dig</span> @127.0.0.1 -p <span>5300</span> doubleclick.net</code></pre><p>Which returns:</p><pre><code data-astro-raw>
+<span>; &lt;&lt;&gt;&gt; DiG 9.10.6 &lt;&lt;&gt;&gt; @127.0.0.1 -p 5300 doubleclick.net</span>
+<span>; (1 server found)</span>
+<span>;; global options: +cmd</span>
+<span>;; Got answer:</span>
+<span>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 61234</span>
+<span>;; flags: qr aa rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1</span>
+
+<span>;; OPT PSEUDOSECTION:</span>
+<span>; EDNS: version: 0, flags:; udp: 4096</span>
+<span>;; QUESTION SECTION:</span>
+<span>;doubleclick.net.		IN	A</span>
+
+<span>;; ANSWER SECTION:</span>
+doubleclick.net.	3600	<span>IN</span>	<span>A</span>	0.0.0.0
+
+<span>;; Query time: 2 msec</span>
+<span>;; SERVER: 127.0.0.1#5300(127.0.0.1)</span>
+<span>;; WHEN: Sun Jan 19 05:53:59 PST 2020</span>
+<span>;; MSG SIZE  rcvd: 60</span>
+</code></pre><p>This result is what we want. Advertiser domains become mapped to <code>0.0.0.0</code>
+and NOT to their actual address. :tada:</p></div></body></html>

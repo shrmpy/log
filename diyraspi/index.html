@@ -1,0 +1,17 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Learn workflow</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css></head><body><div class="fl w-90 pa2"><h1 class="f3 f2-ns lh-title-ns">Introduction</h1><h3 class="f4 f3-ns lh-copy-ns">Pi-hole, but pared down?</h3><p>The first question you have after assembling your Raspi is easily,
+"What can we run?" There's no shortage of projects. In my case,
+I had one in mind before purchase time. It was <a href=https://learn.adafruit.com/pi-hole-ad-pitft-tft-detection-display>Brent Rubell’s Pi-hole Ad Detection</a>
+on Adafruit.</p><p>The idea behind the Pi-hole is to prevent ads from loading.
+<a href=https://jacobsalmela.com/2015/06/16/block-millions-ads-network-wide-with-a-raspberry-pi-hole-2-0/>Jacob Salmela also has a walk through of the entire process</a>.
+It's a good description of how a web
+page actually loads content, and dispels any lingering
+mystery about browsing.</p><p>In following the tutorial, I saw that Dnsmasq is a key
+component. This was cool to learn because I remember configuring
+Dnsmasq from the Archlinux docs under the section for filtering
+domains. Further scanning of the
+guides led to details of an <a href=https://docs.pi-hole.net/guides/unbound/#setting-up-pi-hole-as-a-recursive-dns-server-solution>Unbound combination for recursive DNS</a>.
+This configuration stayed on my mind as I
+played with different recipes, and cemented later as the
+most minimal for my purposes. To clarify, my idea of the sinkhole is a
+configuration free of a web server, DHCP, stats or logging.</p><h2>Goal</h2><p>Again, the objective is to prevent ads. The other benefits cited
+stem from the elimination of ads:</p><ul><li>Reduce security risk of <a href=https://dlaa.me/blog/post/skyhole>cross-site scripts in ads</a></li><li><a href=https://blog.codinghorror.com/an-exercise-program-for-the-fat-web/>Save bandwidth</a> on device data plans</li><li>Stop providers from collecting your <a href=https://docs.pi-hole.net/guides/unbound/#the-problem-whom-can-you-trust>DNS history</a></li></ul><hr><p><a href=/diysubsys>Next</a></p></div></body></html>

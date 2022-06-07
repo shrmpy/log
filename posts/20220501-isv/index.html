@@ -1,0 +1,53 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Learn workflow</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css></head><body><div class="fl w-90 pa2"><h1 id=tls-insecureskipverify>TLS InsecureSkipVerify</h1><p><a href=https://pkg.go.dev/crypto/tls@master#example-Config-VerifyConnection>=> VerifyConnection</a>
+<a href=https://gemini.circumlunar.space/docs/tls-tutorial.gmi>=> TLS Steps</a>
+<a href=https://tildegit.org/solderpunk/gemini-demo-3>=> Solderpunk Demo3</a>
+<a href=https://security.stackexchange.com/q/20803/5568>=> SSL/TLS</a></p><h2 id=1-certificates>§1 /Certificates</h2><p><em>Let&rsquo;s Encrypt</em> is a tremendous life saver. It eliminated the mystery and wall around certificates. A TLS connection to our capsule becomes:</p><pre tabindex=0><code>tls.Dial(&#34;tcp&#34;, url.Host, nil)
+</code></pre><p>That&rsquo;s it. Seems <strong>too</strong> easy. If every server used <em>Let&rsquo;s Encrypt</em>, we would be done. In reality, we only found two other capsules that run on CA certificates. Enter the <code>InsecureSkipVerify</code> toggle. To define alternate verify logic, we enable the toggle with <code>tls.Config</code>, and supply our version in the <code>VerifyConnection</code> hook.</p><h2 id=2-verifyconnection>§2 /VerifyConnection</h2><p>The Go doc example is the critical part:</p><pre tabindex=0><code>	// VerifyConnection can be used to replace and customize connection
+	// verification. This example shows a VerifyConnection implementation that
+	// will be approximately equivalent to what crypto/tls does normally to
+	// verify the peer&#39;s certificate.
+
+	// Client side configuration.
+	_ = &amp;tls.Config{
+		// Set InsecureSkipVerify to skip the default validation we are
+		// replacing. This will not disable VerifyConnection.
+		InsecureSkipVerify: true,
+		VerifyConnection: func(cs tls.ConnectionState) error {
+			opts := x509.VerifyOptions{
+				DNSName:       cs.ServerName,
+				Intermediates: x509.NewCertPool(),
+			}
+			for _, cert := range cs.PeerCertificates[1:] {
+				opts.Intermediates.AddCert(cert)
+			}
+			_, err := cs.PeerCertificates[0].Verify(opts)
+			return err
+		},
+	}
+</code></pre><p>Running it against CA certs continued to produce TLS connections successfully. At the same time, it correctly rejected the non-CA capsules. Which meant that <code>InsecureSkipVerify</code> can be enabled (<code>true</code>), without automatically opening the floodgates to every connect request. Now we can start, and check for properties on the remote cert.</p><h2 id=3-unknownauthorityerror>§3 /UnknownAuthorityError</h2><p>Self-signed certs will cause the standard <code>tls.Dial</code> to error with <code>x509.UnknownAuthorityError</code>. We test for the error type and cast it to utilize the certificate:</p><pre tabindex=0><code>func certFrom(err error) *x509.Certificate {
+	switch et := err.(type) {
+	case x509.UnknownAuthorityError:
+		uae, _ := err.(x509.UnknownAuthorityError)
+		return uae.Cert
+</code></pre><p>Then within our alternate verify, we take the cert and promote it to a CA root cert in the <code>x509.VerifyOptions</code>. Notice that we use a guard to condition this logic. It is permitted when we configure with the <code>gmi.AcceptUAE</code> bit. It is also permitted when we configure with the <code>gmi.PromptUAE</code> bit, but the cert must belong to a capsule from the <code>known_hosts</code> file (more in next devlog).</p><pre tabindex=0><code>	if isv.Has(AcceptUAE) || known &amp;&amp; isv.Has(PromptUAE) {
+		// treat self-signed cert as if root
+		cert.IsCA = true
+		opts.Roots = x509.NewCertPool()
+		opts.Roots.AddCert(cert)
+	}
+</code></pre><h2 id=4-hostnameerror>§4 /HostnameError</h2><p>From Go 1.15 release, the Subject Alternate Name (SAN) is expected and Common Name (CN) becomes legacy. So there can be capsules on CN until their expiration/renewal generates replacement certs. The legacy CN is exposed as <code>x509.HostnameError</code>:</p><pre tabindex=0><code>	case x509.HostnameError:
+		hne, _ := err.(x509.HostnameError)
+		if hne.Certificate.Subject.CommonName == hne.Host {
+			return hne.Certificate
+		}
+</code></pre><p>Since it is possible for different name related issues to fall in this category, we use the <code>Host</code> value that caused the error, and compare it to the <code>CommonName</code> in the cert. This will tell us that the CN was the source of the error. By falling through for other errors, the TLS dial will stop the connection (and can be used for further analysis).</p><p>Then back in our alternate verify, we take the cert to obtain its CN and include it with the <code>DNSNames</code>; the list for SAN.</p><pre tabindex=0><code>	if isv.Has(AcceptLCN) {
+		// inject SAN
+		leaf.DNSNames = append(leaf.DNSNames, cert.Subject.CommonName)
+	}
+</code></pre><p>Notice the guard statement prevents the legacy CN recovery unless the <code>gmi.AcceptLCN</code> bit is enabled by configuration. So the condition for <code>gmi.PromptLCN</code> bit is conspicuously absent. We just haven&rsquo;t built that yet; in terms of severity, the CN is checked, not bypassed technically so we bought more time to work on it.</p><h2 id=5-certificateinvaliderror>§5 /CertificateInvalidError</h2><p>The expired cert is the remaining case encountered among the capsules toured. Since an expired cert is not listed as an exception to rules (Gemini/ otherwise), we left this case for last. For now only reserved configuration to consider for recovery, but feel there is no rush. To detect the case, the error type is <code>x509.CertificateInvalidError</code>:</p><pre tabindex=0><code>	case x509.CertificateInvalidError:
+		cie, _ := err.(x509.CertificateInvalidError)
+		if cie.Reason == x509.Expired {
+			log.Printf(&#34;DEBUG Expired cert, %s&#34;, cie.Detail)
+			return cie.Cert
+		}
+</code></pre><p>Since we don&rsquo;t provide any recovery currently, it will always cause the TLS connection to stop.</p><hr><h2 id=-notes-lessons-monologue>* Notes, Lessons, Monologue</h2><ul><li>Bitmasks? With masks, we take the approach to combine recovery options and apply them on the second <code>tls.Dial</code>. It wasn&rsquo;t our initial attempt which was to loop the <code>tls.Dial</code>, and only toggle one recovery option each pass; the idea being to only enable the least number of options. In concept it sounds good, but the code was garbage. Maybe we can think of a design that is elegant, but for now we&rsquo;re doing masks.</li><li><code>VerifyPeerCertificate</code>? We initially experimented with implementing this hook and failed repeatedly. We just don&rsquo;t have enough understanding yet.</li><li>Opinion? I&rsquo;m a big fan of the toggle <code>InsecureSkipVerify</code>. Let me explain! NOT the use, but more about its design. It recognizes that there is real need to run that flow, whether a team is doing testing or there is a local/controlled network. Making this toggle built-in, accelerates that necessary work, while at the same time makes it explicit that it must be temporary or isolated, and reviewed under a microscope before shipping. I think this kind of language decision is what was meant when Go was charged with reducing stagnation and fear of touching legacy code.</li></ul><h6 id=2022-興怡--always-wrong-sometimes-lucky>2022 興怡 | Always wrong, sometimes lucky</h6></div></body></html>

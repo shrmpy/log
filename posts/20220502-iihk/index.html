@@ -1,0 +1,54 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Learn workflow</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css></head><body><div class="fl w-90 pa2"><h1 id=ssh-insecureignorehostkey>SSH InsecureIgnoreHostKey</h1><p><a href=https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/>=> SSH Host Key</a>
+<a href=https://gemini.circumlunar.space/docs/tls-tutorial.gmi>=> TLS Steps</a>
+<a href=https://www.digitalocean.com/community/tutorials/understanding-the-ssh-encryption-and-connection-process>=> SSH</a></p><h2 id=1-tofu>§1 /TOFU</h2><p>Among our tasks was how to mimic the way SSH negotiates the first connection to a remote. The user continue prompt was already a familiar interaction. Important because our dialer must keep the <code>known_hosts</code> file to track &ldquo;trusted&rdquo; capsules. The other subtle point is the reason behind this act of trust &ndash; the self-signed certificate. Meaning, capsules on self-signed certificates are assumed to be a fast path to launching Gemini content, and common place. To sum up:</p><ul><li>keep <code>known_hosts</code> file</li><li>prompt user to confirm first visit</li><li>identify self-signed certificates</li></ul><h2 id=2-known_capsules>§2 /Known_capsules</h2><p>To begin the recovery flow, we use the prompt bit for self-signed certificates. The other recovery bit flags are <code>gmi.AcceptUAE</code> and <code>gmi.UAEReject</code> which mean continue and halt, respectively:</p><pre tabindex=0><code>func knownCapsules(ctx context.Context, capsule string, cert *x509.Certificate, isv Mask) bool {
+	if !isv.Has(PromptUAE) {
+		return false
+	}
+</code></pre><p>We made this bitmask configurable (via the <code>-json</code> commandline argument), and assigned in the safe defaults as prompt (<code>gmi.PromptUAE</code>).</p><p>Then the &ldquo;trick&rdquo; is to invoke <code>HostKeyCallback</code>:</p><pre tabindex=0><code>import kh &#34;golang.org/x/crypto/ssh/knownhosts&#34;
+...
+func searchKnown(cert *x509.Certificate, capsule string, kcp string) error {
+	sshpk, err := ssh.NewPublicKey(cert.PublicKey)
+	if err != nil {
+		log.Printf(&#34;DEBUG crt to ssh key failed, %v&#34;, err)
+		return err
+	}
+	abs, err := filepath.Abs(kcp)
+	if err != nil {
+		log.Printf(&#34;DEBUG known_capsules path, %v&#34;, err)
+		return err
+	}
+	hostKeyCallback, err := kh.New(abs)
+	if err != nil {
+		log.Printf(&#34;DEBUG callback not created, %v&#34;, err)
+		return err
+	}
+	addr, err := net.ResolveTCPAddr(&#34;tcp&#34;, capsule)
+	if err != nil {
+		log.Printf(&#34;DEBUG resolve, %v&#34;, err)
+		return err
+	}
+	err = hostKeyCallback(capsule, addr, sshpk)
+	if err != nil {
+		log.Printf(&#34;DEBUG known error, %v&#34;, err)
+	}
+</code></pre><p>The <code>ssh/knownhosts</code> package has the <code>New()</code> function which creates a callback for us. We just need to supply the absolute path to our <code>known_capsules</code> file.</p><p>Also, we use the filename <code>known_capsules</code> to emphasize that the remotes are capsules that are tracked, instead of SSH hosts.</p><p>The callback takes capsule name, IP address, and public key as parameters. To find the public key, we obtain the public key of the certificate, then use <code>ssh.NewPublicKey</code>.</p><h2 id=3-user-prompt>§3 /User Prompt</h2><p>For the time being, we have a placeholder. The log output shows the step/event where it is appropriate to make the UI to prompt the user. Currently, it acts as if the choice is <code>Y</code> and continues. It&rsquo;s worth pointing out because we have a todo, and it maps out the continue flow. For continue flow, the new remote needs a) its public key produced, and b) to be appended to the <code>known_hosts</code> file:</p><pre tabindex=0><code>	sshpk, err := ssh.NewPublicKey(cert.PublicKey)
+	if err != nil {
+		return fmt.Errorf(&#34;Capsule prompt failed new key, %w&#34;, err)
+	}
+	line := kh.Line([]string{capsule}, sshpk)
+	file, err := os.OpenFile(abs, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 644)
+	if err != nil {
+		return fmt.Errorf(&#34;Capsule prompt failed file, %w&#34;, err)
+	}
+	defer file.Close()
+	_, err = file.WriteString(line)
+	if err != nil {
+		return fmt.Errorf(&#34;Capsule prompt failed append, %w&#34;, err)
+	}
+	file.WriteString(&#34;\n&#34;)
+</code></pre><h2 id=4-self-signed-cert>§4 /Self-signed Cert</h2><p>Sounds weird, but the TLS dial has to fail THEN we have an error (more in notes below). This error can be cast into different types. <code>x509.UnknownAuthorityError</code> occurs for self-signed certificates because the CA is not recognized.</p><p>Snippet of code that identifies self-signed certificates:</p><pre tabindex=0><code>func certFrom(err error) *x509.Certificate {
+	switch et := err.(type) {
+	case x509.UnknownAuthorityError:
+		uae, _ := err.(x509.UnknownAuthorityError)
+		return uae.Cert
+</code></pre><hr><h2 id=-notes-lessons-monologue>* Notes, Lessons, Monologue</h2><ul><li><p>When? During prototype/poc, when iterating inside controlled networks; when you want to concentrate on the functional requirements. The part I really like is the naming clearly identifies <code>InsecureIgnoreHostKey</code> as dangerous. So any code review should easily flag it when found in commits.</p></li><li><p>Self-signed certs? It can be argued whether self-signed certs are too much risk. May be historical, and as time progresses it will change. <em>Let&rsquo;s Encrypt</em> definitely changed things for the better. I was able to obtain a cert with their CA for <strong>free</strong>. You need your own domain name, and be able to configure httpd to respond to the ACME requests. So in theory, all web servers can say goodbye to self-signed certs.</p></li><li><p>Why waste TLS dial for the error type? I know it seems wasteful. Consider this. The best flow is the standard TLS dial with all the checks in verify. So making the initial TLS dial is actually our ideal, and the recovery flow is to accomodate (Gemini) self-signed certs.</p></li></ul><h6 id=2022-興怡--always-wrong-sometimes-lucky>2022 興怡 | Always wrong, sometimes lucky</h6></div></body></html>

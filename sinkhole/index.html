@@ -1,0 +1,74 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Learn workflow</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css></head><body><div class="fl w-90 pa2"><h1 class="f3 f2-ns lh-title-ns">Make Changes</h1><h3 class="f4 f3-ns lh-copy-ns">Improving on a good thing</h3><p><a href=https://gitlab.com/klutchell/unbound/>Kyle Harding's Docker image</a>
+and <a href=https://github.com/oznu/dns-zone-blacklist/>Oznu's zone list</a>
+are great, and a wealth of information when you scan through their
+Dockerfile, and javascript. I'll bet it inspires your own ideas.</p><h2>Javascript</h2><p>My first thought was to port the javascript to Golang.
+I liked the template usage and knew Golang supports templates.
+Also, having 3 output formats made me wonder whether I could make
+each into a transform step of a pipeline.</p><p>Let's focus on the templates. Right away, we learn that there are two
+ways to designate a domain in our sinkhole:</p><ol><li><code>redirect</code> - the domain is mapped to a local IP address. This can give
+you the option to spin up a web server to respond with a pixel or
+your own content in place of the ad. The IP <code>0.0.0.0</code> can be chosen
+when running without the web server.</li><li><code>nxdomain</code> - the domain is nonexistent. This is the response to signal
+clients that the domain is not defined.</li></ol><p>This explains why for each of the three formats
+(BIND / Unbound / Dnsmasq), there are always two …templates.
+For Unbound, the documentation shows local-zone examples that
+use a dot terminator. So the port from javascript to Golang becomes:</p><pre><code data-astro-raw><span>const</span> <span>(</span>
+unbtempl <span>=</span> <span>`
+local-zone: "{{.}}." redirect
+local-data: "{{.}}. A 0.0.0.0"`</span>
+
+unbnxdomain <span>=</span> <span>`
+local-zone: "{{.}}." always_nxdomain`</span>
+<span>)</span></code></pre><p>Next, the question is whether subdomains get folded under the parent.
+In other words, will blocking the parent automatically suppress its
+descendants?</p><p>According to the <a href=https://nlnetlabs.nl/documentation/unbound/unbound.conf/>unbound.conf.5 man page</a>,
+the local-zone definition already includes subdomains:</p><blockquote><pre><code data-astro-raw>       redirect
+            The query is answered from the local data for the zone  name.
+            There  may  be  no  local  data  beneath the zone name.  This
+            answers queries for the zone, and all subdomains of the  zone
+            with the local data for the zone.  It can be used to redirect
+            a domain to return a different  address  record  to  the  end
+            user,    with   local-zone:   "example.com."   redirect   and
+            local-data: "example.com. A 127.0.0.1" queries for  www.exam-
+            ple.com and www.foo.example.com are redirected, so that users
+            with web browsers  cannot  access  sites  with  suffix  exam-
+            ple.com.</code></pre></blockquote><p>Which makes sense intuitively, and behavior we definitely want to take
+advantage of. Our approach is to track each domain inside a map.</p><p>Then the way we detect a subdomain is:</p><ol><li>Chop off string to the left of leftmost dot.</li><li>Use the result from step 1 as the parent.</li><li>Check whether the parent exists in our tracking map.</li><li>If parent exists, then this subdomain is already covered.
+Continue to next host name.</li><li>If parent doesn't exist, record the host name in tracking map.</li></ol><pre><code data-astro-raw><span>// calc parent domain</span>
+<span>var</span> i <span>=</span> strings<span>.</span><span>IndexRune</span><span>(</span>host<span>,</span> <span>'.'</span><span>)</span>
+<span>if</span> i <span>!=</span> <span>-</span><span>1</span> <span>&amp;&amp;</span> i<span>+</span><span>1</span> <span>&lt;</span> <span>len</span><span>(</span>host<span>)</span> <span>{</span>
+<span>var</span> parent <span>=</span> host<span>[</span>i<span>+</span><span>1</span><span>:</span><span>]</span>
+<span>if</span> <span>_</span><span>,</span> ok <span>:=</span> m<span>[</span>parent<span>]</span><span>;</span> ok <span>{</span>
+<span>// The parent domain has already been recorded.</span>
+<span>// We can skip this subdomain.</span>
+<span>return</span> <span>""</span>
+<span>}</span>
+<span>}</span>
+<span>if</span> <span>_</span><span>,</span> ok <span>:=</span> m<span>[</span>host<span>]</span><span>;</span> <span>!</span>ok <span>{</span>
+<span>// This is the first instance of the host name.</span>
+m<span>[</span>host<span>]</span> <span>=</span> <span>true</span>
+<span>return</span> host
+<span>}</span></code></pre><p>Those are key highlights of the Golang port. Some implementation we
+skipped, like sorting and whitelisting. So we’ll revisit again in the future.</p><p>The whole port is available on the <a href=https://gitlab.com/rtmi/sinkhole>Github repo</a></p><h2 id=docker>Docker</h2><p>Going into the Docker image, the first change is usually to switch base
+to Alpine. On examining the
+<a href=https://gitlab.com/klutchell/unbound/blob/master/Dockerfile>Dockerfile</a>,
+we see that it already uses
+Alpine. So our real modification is to incorporate our Golang port
+(<code>redirect</code> zones) which configures Unbound into a sinkhole.</p><p>Wishlist:</p><ul><li>Use Alpine Linux base image</li><li>Include <code>redirect</code> zones</li><li>Install Unbound via the package manager, <code>apk</code></li></ul><h3 id=redirect-zones><code>redirect</code> zones</h3><p>To create the file of <code>redirect</code> zones (unbound.bl), we compile our
+Golang port and run it inside the container. Most of the work is done
+for us because we start with the Golang base image.</p><pre><code data-astro-raw><span><span>RUN</span> go build -o /go/bin/sinkhole cmd/*.go ; <span>\</span>
+/go/bin/sinkhole ; <span>\</span>
+</span></code></pre><p>Also, note that we separate the Dockerfile into two stages. The first
+stage is <code>build-env</code> dedicated to the preparation of the
+<code>redirect</code> zones. It's very convenient for doing tasks and discarding
+unnecessary artifacts.</p><h3 id=unbound>Unbound</h3><p>With Unbound, we choose the package manager (<code>apk</code>) install. This is
+the major difference from Kyle's Dockerfile. So it was a relief that
+the <code>apk</code> package works without any tinkering. I think it's also worth
+pointing out that the package includes the root cache (roots.hint)
+which saves a step in one of the guides we followed (recursive DNS).</p><pre><code data-astro-raw><span># final stage</span>
+<span><span>FROM</span> alpine:3.11</span>
+<span><span>RUN</span> apk update &amp;&amp; apk --no-cache add unbound ; <span>\</span>
+rm -rf /apk /tmp/* /var/cache/apk/* </span></code></pre><h2>Conclusion</h2><p>Learning from the work of others sparked questions. Answering questions
+meant experiments with <code>redirect</code> and <code>nxdomain</code> configuration. Doing
+experiments reminded us how Docker saves a lot of repitition.</p><p>Again the <a href=https://gitlab.com/rtmi/sinkhole>Github repo</a>
+contains our Golang port, and Dockerfile. The CI is also configured to auto build on Docker hub:</p><pre><code data-astro-raw>docker run -ti -p <span>5300</span>:5300/udp patterns/sinkhole</code></pre></div></body></html>
