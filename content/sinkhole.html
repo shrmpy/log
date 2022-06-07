@@ -1,0 +1,128 @@
++++
+
+title = 'Make Changes'
+type = 'legacy'
+
++++
+
+<h1 class="f3 f2-ns lh-title-ns">Make Changes</h1>
+<h3 class="f4 f3-ns lh-copy-ns">Improving on a good thing</h3>
+<p><a href="https://gitlab.com/klutchell/unbound/">Kyle Harding&#39;s Docker image</a>
+and <a href="https://github.com/oznu/dns-zone-blacklist/">Oznu&#39;s zone list</a>
+are great, and a wealth of information when you scan through their
+Dockerfile, and javascript. I&#39;ll bet it inspires your own ideas.</p>
+<h2 >Javascript</h2>
+<p>My first thought was to port the javascript to Golang.
+I liked the template usage and knew Golang supports templates.
+Also, having 3 output formats made me wonder whether I could make
+each into a transform step of a pipeline.</p>
+<p>Let&#39;s focus on the templates. Right away, we learn that there are two
+ways to designate a domain in our sinkhole:</p>
+<ol>
+<li><code>redirect</code> - the domain is mapped to a local IP address. This can give
+you the option to spin up a web server to respond with a pixel or
+your own content in place of the ad. The IP <code>0.0.0.0</code> can be chosen
+when running without the web server.</li>
+<li><code>nxdomain</code> - the domain is nonexistent. This is the response to signal
+clients that the domain is not defined.</li>
+</ol>
+<p>This explains why for each of the three formats
+(BIND / Unbound / Dnsmasq), there are always two …templates.
+For Unbound, the documentation shows local-zone examples that
+use a dot terminator. So the port from javascript to Golang becomes:</p>
+<pre class=""><code data-astro-raw="" class=""><span class="">const</span> <span class="">(</span>
+unbtempl <span class="">=</span> <span class="">`
+local-zone: "{{.}}." redirect
+local-data: "{{.}}. A 0.0.0.0"`</span>
+
+unbnxdomain <span class="">=</span> <span class="">`
+local-zone: "{{.}}." always_nxdomain`</span>
+<span class="">)</span></code></pre>
+<p>Next, the question is whether subdomains get folded under the parent.
+In other words, will blocking the parent automatically suppress its
+descendants?</p>
+<p>According to the <a href="https://nlnetlabs.nl/documentation/unbound/unbound.conf/">unbound.conf.5 man page</a>,
+the local-zone definition already includes subdomains:</p>
+<blockquote>
+<pre class=""><code data-astro-raw="" class="">       redirect
+            The query is answered from the local data for the zone  name.
+            There  may  be  no  local  data  beneath the zone name.  This
+            answers queries for the zone, and all subdomains of the  zone
+            with the local data for the zone.  It can be used to redirect
+            a domain to return a different  address  record  to  the  end
+            user,    with   local-zone:   "example.com."   redirect   and
+            local-data: "example.com. A 127.0.0.1" queries for  www.exam-
+            ple.com and www.foo.example.com are redirected, so that users
+            with web browsers  cannot  access  sites  with  suffix  exam-
+            ple.com.</code></pre>
+</blockquote>
+<p>Which makes sense intuitively, and behavior we definitely want to take
+advantage of. Our approach is to track each domain inside a map.</p>
+<p>Then the way we detect a subdomain is:</p>
+<ol>
+<li>Chop off string to the left of leftmost dot.</li>
+<li>Use the result from step 1 as the parent.</li>
+<li>Check whether the parent exists in our tracking map.</li>
+<li>If parent exists, then this subdomain is already covered.
+Continue to next host name.</li>
+<li>If parent doesn&#39;t exist, record the host name in tracking map.</li>
+</ol>
+<pre class=""><code data-astro-raw="" class=""><span class="">// calc parent domain</span>
+<span class="">var</span> i <span class="">=</span> strings<span class="">.</span><span class="">IndexRune</span><span class="">(</span>host<span class="">,</span> <span class="">'.'</span><span class="">)</span>
+<span class="">if</span> i <span class="">!=</span> <span class="">-</span><span class="">1</span> <span class="">&amp;&amp;</span> i<span class="">+</span><span class="">1</span> <span class="">&lt;</span> <span class="">len</span><span class="">(</span>host<span class="">)</span> <span class="">{</span>
+<span class="">var</span> parent <span class="">=</span> host<span class="">[</span>i<span class="">+</span><span class="">1</span><span class="">:</span><span class="">]</span>
+<span class="">if</span> <span class="">_</span><span class="">,</span> ok <span class="">:=</span> m<span class="">[</span>parent<span class="">]</span><span class="">;</span> ok <span class="">{</span>
+<span class="">// The parent domain has already been recorded.</span>
+<span class="">// We can skip this subdomain.</span>
+<span class="">return</span> <span class="">""</span>
+<span class="">}</span>
+<span class="">}</span>
+<span class="">if</span> <span class="">_</span><span class="">,</span> ok <span class="">:=</span> m<span class="">[</span>host<span class="">]</span><span class="">;</span> <span class="">!</span>ok <span class="">{</span>
+<span class="">// This is the first instance of the host name.</span>
+m<span class="">[</span>host<span class="">]</span> <span class="">=</span> <span class="">true</span>
+<span class="">return</span> host
+<span class="">}</span></code></pre>
+<p>Those are key highlights of the Golang port. Some implementation we
+skipped, like sorting and whitelisting. So we’ll revisit again in the future.</p>
+<p>The whole port is available on the <a href="https://gitlab.com/rtmi/sinkhole">Github repo</a></p>
+<h2 id="docker">Docker</h2>
+<p>Going into the Docker image, the first change is usually to switch base
+to Alpine. On examining the
+<a href="https://gitlab.com/klutchell/unbound/blob/master/Dockerfile">Dockerfile</a>,
+we see that it already uses
+Alpine. So our real modification is to incorporate our Golang port
+(<code>redirect</code> zones) which configures Unbound into a sinkhole.</p>
+<p>Wishlist:</p>
+<ul>
+<li>Use Alpine Linux base image</li>
+<li>Include <code>redirect</code> zones</li>
+<li>Install Unbound via the package manager, <code>apk</code></li>
+</ul>
+<h3 id="redirect-zones"><code>redirect</code> zones</h3>
+<p>To create the file of <code>redirect</code> zones (unbound.bl), we compile our
+Golang port and run it inside the container. Most of the work is done
+for us because we start with the Golang base image.</p>
+<pre class=""><code data-astro-raw="" class=""><span class=""><span class="">RUN</span> go build -o /go/bin/sinkhole cmd/*.go ; <span class="">\</span>
+/go/bin/sinkhole ; <span class="">\</span>
+</span></code></pre>
+<p>Also, note that we separate the Dockerfile into two stages. The first
+stage is <code>build-env</code> dedicated to the preparation of the
+<code>redirect</code> zones. It&#39;s very convenient for doing tasks and discarding
+unnecessary artifacts.</p>
+<h3 id="unbound">Unbound</h3>
+<p>With Unbound, we choose the package manager (<code>apk</code>) install. This is
+the major difference from Kyle&#39;s Dockerfile. So it was a relief that
+the <code>apk</code> package works without any tinkering. I think it&#39;s also worth
+pointing out that the package includes the root cache (roots.hint)
+which saves a step in one of the guides we followed (recursive DNS).</p>
+<pre class=""><code data-astro-raw="" class=""><span class=""># final stage</span>
+<span class=""><span class="">FROM</span> alpine:3.11</span>
+<span class=""><span class="">RUN</span> apk update &amp;&amp; apk --no-cache add unbound ; <span class="">\</span>
+rm -rf /apk /tmp/* /var/cache/apk/* </span></code></pre>
+<h2 >Conclusion</h2>
+<p>Learning from the work of others sparked questions. Answering questions
+meant experiments with <code>redirect</code> and <code>nxdomain</code> configuration. Doing
+experiments reminded us how Docker saves a lot of repitition.</p>
+<p>Again the <a href="https://gitlab.com/rtmi/sinkhole">Github repo</a>
+contains our Golang port, and Dockerfile. The CI is also configured to auto build on Docker hub:</p>
+<pre class=""><code data-astro-raw="" class="">docker run -ti -p <span class="">5300</span>:5300/udp patterns/sinkhole</code></pre>
