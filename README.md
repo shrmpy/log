@@ -1,17 +1,12 @@
 # log
 
 A skeleton template to: 
-1. use Github workflow
-2. convert gemtext to Markdown
-3. drop Markdown into Hugo
-4. publish to Github Pages
-5. publish to Cloudflare Pages
 
 
-## Demo
+## Revisited
 
-[Github Pages](https://shrmpy.github.io/log)
-[Cloudflare Pages](https://shrmpy-log.pages.dev/)
+tbd
+
 
 
 ## Credits

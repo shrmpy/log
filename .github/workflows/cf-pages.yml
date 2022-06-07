@@ -43,7 +43,7 @@ jobs:
           fetch-depth: 0
       - name: Hugo baseURL step 
         run: |
-          sed -i 's|shrmpy.github.io/log|shrmpy-log.pages.dev|' config.toml
+          sed -i 's|shrmpy.github.io/log|gemini-redux.pages.dev|' config.toml
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
@@ -62,7 +62,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: learn-gemini-diy
+          projectName: gemini-redux
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           directory: ./public
 
