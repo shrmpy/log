@@ -19,10 +19,8 @@ jobs:
           for file in gemtext/*.md; do
             sed -i '1i +++\ndraft = false\n+++\n' "$file"
           done
-
-      - name: Hugo Section step 
-        run: |
           mv content/_index.md gemtext/
+          sed -i '1i +++\ntitle = "Dev Journal"\n+++\nge\mini log\n' gemtext/_index.md
 
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
@@ -44,6 +42,7 @@ jobs:
       - name: Hugo baseURL step 
         run: |
           sed -i 's|shrmpy.github.io/log|gemini-redux.pages.dev|' config.toml
+          sed -i '1i +++\ntitle = "Dev Journey"\n+++\n' content/_index.md
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
