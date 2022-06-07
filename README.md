@@ -1,17 +1,16 @@
 # log
-
-A skeleton template to: 
-
-
-## Revisited
-
-tbd
-
+journal of projects / experiments
 
 
 ## Credits
 
-Hugo action
- by [Shohei Ueda](https://gohugo.io/hosting-and-deployment/hosting-on-github/#build-hugo-with-github-action) ([LICENSE](https://github.com/peaceiris/actions-hugo/blob/main/LICENSE))
+Homepage Template by [Hugo](https://gohugo.io/templates/homepage/)
 
-Cloudflare [direct upload](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/)
+Abs Mini Hugo by [Kai Hendry](https://dabase.com/e/04066/)
+
+Minimal Hugo
+ by [Arun Ravindran](https://arunrocks.com/minimal-hugo-site-tutorial/)
+
+Hugo Layout
+ by [CloudCannon](https://cloudcannon.com/community/learn/hugo-tutorial/layouts-in-hugo/)
+
