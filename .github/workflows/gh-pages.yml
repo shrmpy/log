@@ -22,6 +22,7 @@ jobs:
           mv content/_index.md gemtext/
           sed -i '1i +++\ntitle = "Dev Journal"\n+++\nge/mini log\n' gemtext/_index.md
 
+
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -41,6 +42,7 @@ jobs:
       - name: Hugo branch bundle step 
         run: |
           sed -i '1i +++\ntitle = "Dev Journey"\n+++\n' content/_index.md
+          sed -i 's|BASE-URL|/log|' config.toml
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2

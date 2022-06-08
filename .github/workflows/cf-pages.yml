@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 0
       - name: Hugo baseURL step 
         run: |
-          sed -i 's|shrmpy.github.io/log|gemini-redux.pages.dev|' config.toml
+          sed -i 's|BASE-URL|/|' config.toml
           sed -i '1i +++\ntitle = "Dev Journey"\n+++\n' content/_index.md
 
       - name: Setup Hugo
