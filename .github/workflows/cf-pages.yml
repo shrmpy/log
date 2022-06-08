@@ -20,7 +20,7 @@ jobs:
             sed -i '1i +++\ndraft = false\n+++\n' "$file"
           done
           mv content/_index.md gemtext/
-          sed -i '1i +++\ntitle = "Dev Journal"\n+++\nge\mini log\n' gemtext/_index.md
+          sed -i '1i +++\ntitle = "Dev Journal"\n+++\nge/mini log\n' gemtext/_index.md
 
       - name: Archive md artifacts
         uses: actions/upload-artifact@v3
