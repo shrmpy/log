@@ -1,4 +1,4 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Dev Journey</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css><link rel=stylesheet href=assets/gradient.css><link href=assets/favicon.svg rel=icon type=image/svg></head><body><div class="fl w-90 pa2"><h1 id=tls-insecureskipverify>TLS InsecureSkipVerify</h1><p><a href=https://pkg.go.dev/crypto/tls@master#example-Config-VerifyConnection>=> VerifyConnection</a>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Dev Journey</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css><link rel=stylesheet href=/assets/gradient.css><link href=/assets/favicon.svg rel=icon type=image/svg></head><body><div class="fl w-100 bg-light-silver navy"><h1 id=tls-insecureskipverify>TLS InsecureSkipVerify</h1><p><a href=https://pkg.go.dev/crypto/tls@master#example-Config-VerifyConnection>=> VerifyConnection</a>
 <a href=https://gemini.circumlunar.space/docs/tls-tutorial.gmi>=> TLS Steps</a>
 <a href=https://tildegit.org/solderpunk/gemini-demo-3>=> Solderpunk Demo3</a>
 <a href=https://security.stackexchange.com/q/20803/5568>=> SSL/TLS</a></p><h2 id=1-certificates>§1 /Certificates</h2><p><em>Let&rsquo;s Encrypt</em> is a tremendous life saver. It eliminated the mystery and wall around certificates. A TLS connection to our capsule becomes:</p><pre tabindex=0><code>tls.Dial(&#34;tcp&#34;, url.Host, nil)
@@ -35,8 +35,8 @@
 		opts.Roots = x509.NewCertPool()
 		opts.Roots.AddCert(cert)
 	}
-</code></pre><h2 id=4-hostnameerror>§4 /HostnameError</h2><p>From Go 1.15 release, the Subject Alternate Name (SAN) is expected and Common Name (CN) becomes legacy. So there can be capsules on CN until their expiration/renewal generates replacement certs. The legacy CN is exposed as <code>x509.HostnameError</code>:</p><pre><code>case x509.HostnameError:
-</code></pre><pre tabindex=0><code>		hne, _ := err.(x509.HostnameError)
+</code></pre><h2 id=4-hostnameerror>§4 /HostnameError</h2><p>From Go 1.15 release, the Subject Alternate Name (SAN) is expected and Common Name (CN) becomes legacy. So there can be capsules on CN until their expiration/renewal generates replacement certs. The legacy CN is exposed as <code>x509.HostnameError</code>:</p><pre tabindex=0><code>	case x509.HostnameError:
+		hne, _ := err.(x509.HostnameError)
 		if hne.Certificate.Subject.CommonName == hne.Host {
 			return hne.Certificate
 		}
