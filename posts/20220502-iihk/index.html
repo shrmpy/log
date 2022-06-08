@@ -1,4 +1,4 @@
-<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Dev Journey</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css><link rel=stylesheet href=/assets/gradient.css><link href=/assets/favicon.svg rel=icon type=image/svg></head><body><div class="fl w-100 bg-light-silver navy"><h1 id=ssh-insecureignorehostkey>SSH InsecureIgnoreHostKey</h1><p><a href=https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/>=> SSH Host Key</a>
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Dev Journey</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css><link rel=stylesheet href=/assets/gradient.css><link href=/assets/favicon.svg rel=icon type=image/svg></head><body><div class="fl min-vh-100 w-100 bg-light-silver navy"><h1 id=ssh-insecureignorehostkey>SSH InsecureIgnoreHostKey</h1><p><a href=https://skarlso.github.io/2019/02/17/go-ssh-with-host-key-verification/>=> SSH Host Key</a>
 <a href=https://gemini.circumlunar.space/docs/tls-tutorial.gmi>=> TLS Steps</a>
 <a href=https://www.digitalocean.com/community/tutorials/understanding-the-ssh-encryption-and-connection-process>=> SSH</a></p><h2 id=1-tofu>§1 /TOFU</h2><p>Among our tasks was how to mimic the way SSH negotiates the first connection to a remote. The user continue prompt was already a familiar interaction. Important because our dialer must keep the <code>known_hosts</code> file to track &ldquo;trusted&rdquo; capsules. The other subtle point is the reason behind this act of trust &ndash; the self-signed certificate. Meaning, capsules on self-signed certificates are assumed to be a fast path to launching Gemini content, and common place. To sum up:</p><ul><li>keep <code>known_hosts</code> file</li><li>prompt user to confirm first visit</li><li>identify self-signed certificates</li></ul><h2 id=2-known_capsules>§2 /Known_capsules</h2><p>To begin the recovery flow, we use the prompt bit for self-signed certificates. The other recovery bit flags are <code>gmi.AcceptUAE</code> and <code>gmi.UAEReject</code> which mean continue and halt, respectively:</p><pre tabindex=0><code>func knownCapsules(ctx context.Context, capsule string, cert *x509.Certificate, isv Mask) bool {
 	if !isv.Has(PromptUAE) {
@@ -13,10 +13,10 @@ func searchKnown(cert *x509.Certificate, capsule string, kcp string) error {
 		return err
 	}
 	abs, err := filepath.Abs(kcp)
-	if err != nil {
 		log.Printf(&#34;DEBUG known_capsules path, %v&#34;, err)
 		return err
 	}
+	if err != nil {
 	hostKeyCallback, err := kh.New(abs)
 	if err != nil {
 		log.Printf(&#34;DEBUG callback not created, %v&#34;, err)
