@@ -13,6 +13,7 @@ sudo Xorg -config
 echo &#39;exec dwm&#39; &gt; ~/.xinitrc
 startx
 alt-shift-enter
+sudo pkg install tigervnc-viewer
 vncviewer 10.20.30.45
 </code></pre><h2 id=2-realvnc>§2 /RealVNC</h2><p>Be sure the VNC server is only internal LAN (firewall drops port 5900 requests originating from outside the subnet). On the Raspi device, change the VNC server configuration to allow viewer connections that don&rsquo;t have the RealVNC proprietary encryption. Follow the steps described in the StackExchange answer.</p><ul><li><code>raspi-config</code></li><li>Interfaces Options | VNC</li><li>edit /root/.vnc/config.d/vncserver-x11</li></ul><pre tabindex=0><code>Authentication=VncAuth
 Encryption=AlwaysOff

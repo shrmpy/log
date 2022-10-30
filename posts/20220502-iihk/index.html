@@ -46,9 +46,26 @@ func searchKnown(cert *x509.Certificate, capsule string, kcp string) error {
 		return fmt.Errorf(&#34;Capsule prompt failed append, %w&#34;, err)
 	}
 	file.WriteString(&#34;\n&#34;)
-</code></pre><h2 id=4-self-signed-cert>§4 /Self-signed Cert</h2><p>Sounds weird, but the TLS dial has to fail THEN we have an error (more in notes below). This error can be cast into different types. <code>x509.UnknownAuthorityError</code> occurs for self-signed certificates because the CA is not recognized.</p><p>Snippet of code that identifies self-signed certificates:</p><pre tabindex=0><code>func certFrom(err error) *x509.Certificate {
-	switch et := err.(type) {
-	case x509.UnknownAuthorityError:
-		uae, _ := err.(x509.UnknownAuthorityError)
-		return uae.Cert
-</code></pre><hr><h2 id=-notes-lessons-monologue>* Notes, Lessons, Monologue</h2><ul><li><p>When? During prototype/poc, when iterating inside controlled networks; when you want to concentrate on the functional requirements. The part I really like is the naming clearly identifies <code>InsecureIgnoreHostKey</code> as dangerous. So any code review should easily flag it when found in commits.</p></li><li><p>Self-signed certs? It can be argued whether self-signed certs are too much risk. May be historical, and as time progresses it will change. <em>Let&rsquo;s Encrypt</em> definitely changed things for the better. I was able to obtain a cert with their CA for <strong>free</strong>. You need your own domain name, and be able to configure httpd to respond to the ACME requests. So in theory, all web servers can say goodbye to self-signed certs.</p></li><li><p>Why waste TLS dial for the error type? I know it seems wasteful. Consider this. The best flow is the standard TLS dial with all the checks in verify. So making the initial TLS dial is actually our ideal, and the recovery flow is to accomodate (Gemini) self-signed certs.</p></li></ul><h6 id=2022-興怡--always-wrong-sometimes-lucky>2022 興怡 | Always wrong, sometimes lucky</h6></div></body></html>
+
+
+## §4 /Self-signed Cert
+Sounds weird, but the TLS dial has to fail THEN we have an error (more in notes below). This error can be cast into different types. `x509.UnknownAuthorityError` occurs for self-signed certificates because the CA is not recognized.
+
+Snippet of code that identifies self-signed certificates:
+</code></pre><p>func certFrom(err error) *x509.Certificate {
+switch et := err.(type) {
+case x509.UnknownAuthorityError:
+uae, _ := err.(x509.UnknownAuthorityError)
+return uae.Cert</p><pre tabindex=0><code>
+
+---
+
+## * Notes, Lessons, Monologue
+* When? During prototype/poc, when iterating inside controlled networks; when you want to concentrate on the functional requirements. The part I really like is the naming clearly identifies `InsecureIgnoreHostKey` as dangerous. So any code review should easily flag it when found in commits.
+
+* Self-signed certs? It can be argued whether self-signed certs are too much risk. May be historical, and as time progresses it will change. *Let&#39;s Encrypt* definitely changed things for the better. I was able to obtain a cert with their CA for __free__. You need your own domain name, and be able to configure httpd to respond to the ACME requests. So in theory, all web servers can say goodbye to self-signed certs.
+
+* Why waste TLS dial for the error type? I know it seems wasteful. Consider this. The best flow is the standard TLS dial with all the checks in verify. So making the initial TLS dial is actually our ideal, and the recovery flow is to accomodate (Gemini) self-signed certs.
+
+###### 2022 興怡 | Always wrong, sometimes lucky
+</code></pre></div></body></html>
