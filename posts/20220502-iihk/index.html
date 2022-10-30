@@ -13,10 +13,10 @@ func searchKnown(cert *x509.Certificate, capsule string, kcp string) error {
 		return err
 	}
 	abs, err := filepath.Abs(kcp)
+	if err != nil {
 		log.Printf(&#34;DEBUG known_capsules path, %v&#34;, err)
 		return err
 	}
-	if err != nil {
 	hostKeyCallback, err := kh.New(abs)
 	if err != nil {
 		log.Printf(&#34;DEBUG callback not created, %v&#34;, err)
