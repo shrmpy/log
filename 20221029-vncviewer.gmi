@@ -1,0 +1,50 @@
+# VNC Viewer
+
+=> https://raspberrypi.stackexchange.com/a/65948  Encryption AlwaysOff
+=> https://www.digitalocean.com/community/tutorials/recommended-steps-for-new-freebsd-12-0-servers  FreeBSD New
+=> https://www.digitalocean.com/community/tutorials/an-introduction-to-basic-freebsd-maintenance  FreeBSD Maintenance
+
+
+## §1 /Xorg
+For the vncviewer, run X11 on FreeBSD
+
+```
+visudo
+sudo freebsd-update fetch install
+sudo pkg update
+sudo pkg upgrade
+sudo pkg install drm-kmod
+sudo pkg install xorg
+sudo pkg install dwm
+sudo echo 'kld_list="i915kms"' >> /etc/rc.conf
+sudo reboot
+sudo Xorg -config
+echo 'exec dwm' > ~/.xinitrc
+startx
+alt-shift-enter
+vncviewer 10.20.30.45
+
+```
+
+## §2 /RealVNC
+Be sure the VNC server is only internal LAN (firewall drops port 5900 requests originating from outside the subnet). On the Raspi device, change the VNC server configuration to allow viewer connections that don't have the RealVNC proprietary encryption. Follow the steps described in the StackExchange answer.
+
+* `raspi-config`  
+* Interfaces Options | VNC
+* edit /root/.vnc/config.d/vncserver-x11
+```
+Authentication=VncAuth
+Encryption=AlwaysOff
+Password=e0fd0472492935da
+```
+* `vncpasswd -service`  
+
+
+---
+
+## * Notes, Lessons, Monologue
+* Disable RealVNC encryption seems like a bad idea? That's why it's important to retrict viewer connections inside the LAN. This is the lesser evil of attempting to find a RealVNC viewer on FreeBSD, or don't use FreeBSD. On FreeBSD, TigerVNC is the vncviewer available via ports. So it's simpler to use vncviewer with FreeBSD, and configure the Raspi to accept unencrypted connections. 
+
+* Why? Normally don't. However, these are interesting times. The HDMI on the Raspi is flickering and blanking. After ~six years, it's about to die. The last hope is to use it in headless mode. For our purposes, we want it to act as the build/test device for WebGPU experiments. So it can still drive displays indirectly.
+
+###### 2022 興怡 | Always wrong, sometimes lucky
