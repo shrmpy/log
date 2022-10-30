@@ -1,0 +1,20 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Dev Journey</title><link rel=stylesheet href=https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css><link rel=stylesheet href=/assets/gradient.css><link href=/assets/favicon.svg rel=icon type=image/svg></head><body><div class="fl min-vh-100 w-100 bg-light-silver navy"><h1 id=vnc-viewer>VNC Viewer</h1><p><a href=https://raspberrypi.stackexchange.com/a/65948>=> Encryption AlwaysOff</a>
+<a href=https://www.digitalocean.com/community/tutorials/recommended-steps-for-new-freebsd-12-0-servers>=> FreeBSD New</a>
+<a href=https://www.digitalocean.com/community/tutorials/an-introduction-to-basic-freebsd-maintenance>=> FreeBSD Maintenance</a></p><h2 id=1-xorg>§1 /Xorg</h2><p>For the vncviewer, run X11 on FreeBSD</p><pre tabindex=0><code>visudo
+sudo freebsd-update fetch install
+sudo pkg update
+sudo pkg upgrade
+sudo pkg install drm-kmod
+sudo pkg install xorg
+sudo pkg install dwm
+sudo echo &#39;kld_list=&#34;i915kms&#34;&#39; &gt;&gt; /etc/rc.conf
+sudo reboot
+sudo Xorg -config
+echo &#39;exec dwm&#39; &gt; ~/.xinitrc
+startx
+alt-shift-enter
+vncviewer 10.20.30.45
+</code></pre><h2 id=2-realvnc>§2 /RealVNC</h2><p>Be sure the VNC server is only internal LAN (firewall drops port 5900 requests originating from outside the subnet). On the Raspi device, change the VNC server configuration to allow viewer connections that don&rsquo;t have the RealVNC proprietary encryption. Follow the steps described in the StackExchange answer.</p><ul><li><code>raspi-config</code></li><li>Interfaces Options | VNC</li><li>edit /root/.vnc/config.d/vncserver-x11</li></ul><pre tabindex=0><code>Authentication=VncAuth
+Encryption=AlwaysOff
+Password=e0fd0472492935da
+</code></pre><ul><li><code>vncpasswd -service</code></li></ul><hr><h2 id=-notes-lessons-monologue>* Notes, Lessons, Monologue</h2><ul><li><p>Disable RealVNC encryption seems like a bad idea? That&rsquo;s why it&rsquo;s important to retrict viewer connections inside the LAN. This is the lesser evil of attempting to find a RealVNC viewer on FreeBSD, or don&rsquo;t use FreeBSD. On FreeBSD, TigerVNC is the vncviewer available via ports. So it&rsquo;s simpler to use vncviewer with FreeBSD, and configure the Raspi to accept unencrypted connections.</p></li><li><p>Why? Normally don&rsquo;t. However, these are interesting times. The HDMI on the Raspi is flickering and blanking. After ~six years, it&rsquo;s about to die. The last hope is to use it in headless mode. For our purposes, we want it to act as the build/test device for WebGPU experiments. So it can still drive displays indirectly.</p></li></ul><h6 id=2022-興怡--always-wrong-sometimes-lucky>2022 興怡 | Always wrong, sometimes lucky</h6></div></body></html>
