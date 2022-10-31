@@ -22,6 +22,7 @@ sudo Xorg -config
 echo 'exec dwm' > ~/.xinitrc
 startx
 alt-shift-enter
+sudo pkg install tigervnc-viewer
 vncviewer 10.20.30.45
 
 ```
