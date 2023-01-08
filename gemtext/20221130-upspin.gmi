@@ -1,0 +1,107 @@
+# Upspin
+
+=> https://upspin.io  Upspin Project
+=> https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/getting_started  Google Provider Intro
+
+## §1 /GCP
+Choose the ARM machine type `t2a-standard-1`.
+Repetitive steps are collected into this Terraform HCL (where *MY-SUBDOMAIN-EXAMPLE-COM* is a placeholder and should be replaced with a real value):
+
+```main.tf
+provider "google" {
+  project = "MY-SUBDOMAIN-EXAMPLE-COM"
+  region = "us-central1"
+  zone = "us-central1-a"
+}
+
+resource "google_compute_network" "vpc_network" {
+  name = "my-custom-mode-net"
+  auto_create_subnetworks = false
+  mtu = 1460
+}
+
+resource "google_compute_subnetwork" "default" {
+  name = "my-custom-subnet"
+  ip_cidr_range = "10.0.1.0/24"
+  network = google_compute_network.vpc_network.self_link
+}
+
+# Create a single Compute Engine instance
+resource "google_compute_instance" "vm_instance" {
+  name = "upspin-MY-SUBDOMAIN-EXAMPLE-COM"
+  machine_type = "t2a-standard-1"
+  allow_stopping_for_update = true
+  tags = ["ssh"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-11-arm"
+      size = 20
+    }
+  }
+
+  # Install Flask (python cgi)
+  ##metadata_startup_script = "sudo apt-get update; sudo apt-get install -yq build-essential python3-pip rsync; pip install flask"
+  # TODO kept here as reminder because we will use upspin command to deploy to the instance
+
+  network_interface {
+    nic_type = "GVNIC"
+    subnetwork = google_compute_subnetwork.default.self_link
+    access_config {
+      # Include this section to give the VM an external IP address
+    }
+  }
+}
+
+resource "google_compute_firewall" "ssh" {
+  name = "allow-ssh"
+  allow {
+    ports = ["22"]
+    protocol = "tcp"
+  }
+  direction = "INGRESS"
+  network = google_compute_network.vpc_network.self_link
+  priority = 1000
+  source_ranges = ["0.0.0.0/0"]
+  target_tags = ["ssh"]
+}
+
+resource "google_compute_firewall" "upspin" {
+  name = "upspin-app-firewall"
+  network = google_compute_network.vpc_network.self_link
+  allow {
+    protocol = "tcp"
+    ports = ["80", "443"]
+  }
+  source_ranges = ["0.0.0.0/0"]
+}
+
+##resource "google_compute_snapshot" "upspin_server_snapshot" {
+##  name = "upspin-20221129-ubuntu2204lts"
+##  source_disk = google_compute_instance.vm_instance.self_link
+##}
+
+# A variable for extracting the external IP address of the VM
+output "Upspin-server-URL" {
+  value = join("", ["http://", google_compute_instance.vm_instance.network_interface.0.access_config.0.nat_ip, ":80"])
+}
+
+```
+
+
+## §2 /TBD
+TBD
+
+
+---
+
+## * Notes, Lessons, Monologue
+* Why use ephemeral IP? shouldn't it be a static IP. TBD
+
+* What is the snapshot about? TBD
+
+* Why choose a ARM machine type? At least until Apr 2023, the free tier treats this machine type as a trial. Which means it will need revisiting later to make sure the pricing isn't a sudden surprise.
+
+
+
+###### 2023 興怡 | Keep Calm and bugfix on
