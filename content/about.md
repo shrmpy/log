@@ -19,4 +19,4 @@ Gemini by design encourages the client implementation to be done in ~100 LOC. It
 * Source the guides, "Here is the short list of articles that help configure X:"
 * Mainly as a journal entry, try to avoid repeating information, but explain notes from the guides where there was something specific required.
 
-###### 2022 興怡 | Always wrong, sometimes lucky
+###### 2023 興怡 | Keep Calm and bugfix on

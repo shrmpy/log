@@ -1,13 +1,13 @@
 # Cloudflare Tunnel
 
-=> https://https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/local/#set-up-a-tunnel-locally-cli-setup  Install cloudflared
+=> https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/local/#set-up-a-tunnel-locally-cli-setup  Install cloudflared
 => https://humungus.tedunangst.com/r/honk  Honk Manual
 
 
 ## §1 /Cloudflared
 For FreeBSD, the makefile has the line indicating how to build cloudflared:
 
-```
+```bash
 git clone --depth=1 https://github.com/cloudflare/cloudflared.git
 cd cloudflared
 GOOS=freebsd GOARCH=amd64 go build -mod=vendor -v ./cmd/cloudflared
@@ -15,9 +15,9 @@ GOOS=freebsd GOARCH=amd64 go build -mod=vendor -v ./cmd/cloudflared
 ```
 
 ## §2 /Honk
-Honk requires the libraries for sqlite3. Then just follow the steps from the admin manual:
+Honk requires the libraries for SQLite3. Then just follow the steps from the admin manual:
 
-```
+```bash
 go install humungus.tedunangst.org/r/honk@latest
 honk -datadir ./honking init
 honk -datadir ./honking admin
@@ -56,4 +56,4 @@ ingress:
 * Why tunnel? So Cloudflare made the cloudflared tunnel available for free otherwise we wouldn't even try. That's reason #1. Next, it had a great claim which was to hide your internal services. In the past, I think this only applied to HTTP/S, but the features have expanded to TCP and more ports. Anyways if the configuration fits, we never have to expose public IP addresses; the Cloudflare proxy becomes the public layer and our services stay inside private subnets (e.g., 10.0.0.1). We don't need to configure firewall rules or spin up our own VPN. We need to have a domain name such as `example.com` then our service listening at `http://localhost:8077` can be accessed externally by `https://example.com`. Besides the frictionless setup, having Cloudflare as the public surface should give one element of security because known attackers can be detected by Cloudflare infrastructure before they forward the request to our server.
 
 
-###### 2023 興怡 | Stay calm bugfix on
+###### 2023 興怡 | Keep Calm and bugfix on
