@@ -18,7 +18,7 @@ GOOS=freebsd GOARCH=amd64 go build -mod=vendor -v ./cmd/cloudflared
 Honk requires the libraries for SQLite3. Then just follow the steps from the admin manual:
 
 ```bash
-go install humungus.tedunangst.org/r/honk@latest
+go install humungus.tedunangst.com/r/honk@latest
 honk -datadir ./honking init
 honk -datadir ./honking admin
 cp -R ~/devel/honk/views .
