@@ -28,8 +28,12 @@ The `GOOS` and `GOARCH` env values are for the Google Compute machine type which
 
 
 ## §3 /GCP
-Choose the ARM machine type `t2a-standard-1`.
-Repetitive steps are collected into this Terraform HCL (where *MY-SUBDOMAIN-EXAMPLE-COM* is a placeholder and should be replaced with a real value):
+We are recycling the Google Cloud Project and skipped creation this time around. With the Google Cloud SDK, the snapcraft option was the easiest.
+
+TBD check Google Cloud Storage bucket steps (because "Bucket already exists")
+
+
+Now it's time to provision the Google Compute machine (`t2a-standard-1`). Collected into Terraform HCL (where *MY-SUBDOMAIN-EXAMPLE-COM* is a placeholder and should be replaced with a real value):
 
 ```main.tf
 provider "google" {
@@ -112,10 +116,7 @@ output "Upspin-server-URL" {
 
 ```
 
-
-## §XVIII /TBD
-TBD
-
+The assigned IP should be displayed at the end of deployment. The rest of the instructions for DNS, upload, and configuration of the upspinserver binary can be followed as described.
 
 
 ---
@@ -124,6 +125,11 @@ TBD
 * Why use ephemeral IP? shouldn't it be a static IP. TBD
 
 * What is the snapshot about? TBD
+
+
+* Why Terraform? `terraform destroy` when we need to undo/start over is very convenient. The alternative was to reverse the GCP steps using the console UI.
+
+* Why Terraform? No installation required. The GCP console has a shell tool that is embedded inside the web browser. It will link to the project at launch. It also stores the state of the Terraform deployments; similar to choosing Terraform Cloud to be the backend for the state data.
 
 * Why choose a ARM machine type? At least until Apr 2023, the free tier treats this machine type as a trial. Which means it will need revisiting later to make sure the pricing isn't a sudden surprise.
 
