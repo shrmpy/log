@@ -3,7 +3,31 @@
 => https://upspin.io  Upspin Project
 => https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/getting_started  Google Provider Intro
 
-## §1 /GCP
+## §1 /Remember
+Start at the server page to get familiar, jog memory
+=> https://upspin.io/doc/server_setup.md  Upspin Server
+
+Keep in mind we'll skip around because we actually have our registration from years ago when we did our first test drive. Read down to the subheading for *Specific instructions for cloud services*, making sure everything looks good so far (the instructions should not be a surprise as we completed them once before).
+
+Next visit the GCP page to continue
+=> https://upspin.io/doc/server_setup_gcp.md  Setup Google Compute
+
+
+## §2 /Upspinserver
+Stick to the instructions on building `upspinserver-gcp` and `upspin-setupstorage-gcp` with only minor adjustments:
+
+```bash
+mkdir uptest && cd uptest
+go mod init example.com/uptest
+go get -d gcp.upspin.io/cmd/...
+go install gcp.upspin.io/cmd/upspin-setupstorage-gcp
+GOOS=linux GOARCH=arm64 go build gcp.upspin.io/cmd/upspinserver-gcp
+```
+
+The `GOOS` and `GOARCH` env values are for the Google Compute machine type which in our case will be ARM (`t2a-standard-1`).
+
+
+## §3 /GCP
 Choose the ARM machine type `t2a-standard-1`.
 Repetitive steps are collected into this Terraform HCL (where *MY-SUBDOMAIN-EXAMPLE-COM* is a placeholder and should be replaced with a real value):
 
@@ -89,13 +113,8 @@ output "Upspin-server-URL" {
 ```
 
 
-## §2 /Upspinserver
-Start at the server page (https://upspin.io/doc/server_setup.md) to get familiar.
-Keep in mind we'll skip around because we actually have our registration from years ago when we did our first test drive. Read down to the subheading for *Specific instructions for cloud services*, making sure everything looks good so far (the instructions should not be a surprise as we completed them once years before).
-
-Now visit the GCP page (https://upspin.io/doc/server_setup_gcp.md) to continue.
-
-To build `upspinserver-gcp` and `upspin-setupstorage-gcp`, follow the instructions. The go download command may have changed. So `go install` may be necessary in place of `go get`.
+## §XVIII /TBD
+TBD
 
 
 
